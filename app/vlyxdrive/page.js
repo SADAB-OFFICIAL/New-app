@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { decodeData, encodeData } from '@/lib/utils';
+import { decodeData, encodeData } from '@/lib/utils'; // Agar error aaye to '../../lib/utils' kar dena
 
-export default function VlyxDrive() {
+function VlyxDriveContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [links, setLinks] = useState([]);
@@ -22,11 +22,11 @@ export default function VlyxDrive() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
+    <div className="w-full max-w-md flex flex-col items-center">
       <h1 className="text-2xl font-bold mb-2">Select Server</h1>
       <p className="text-gray-400 mb-6">{meta?.title} - {meta?.quality}</p>
 
-      <div className="space-y-4 w-full max-w-md">
+      <div className="space-y-4 w-full">
         {links.map((link, i) => (
           <button
             key={i}
@@ -47,6 +47,16 @@ export default function VlyxDrive() {
         ))}
         {links.length === 0 && <p>Scanning links...</p>}
       </div>
+    </div>
+  );
+}
+
+export default function VlyxDrive() {
+  return (
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
+      <Suspense fallback={<div className="text-white">Loading Drive...</div>}>
+        <VlyxDriveContent />
+      </Suspense>
     </div>
   );
 }
