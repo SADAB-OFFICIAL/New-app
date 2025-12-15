@@ -33,37 +33,74 @@ export async function POST(req) {
         if (src) screenshots.push(src);
     });
 
-    // 2. Download Links with TYPE Detection (Episode vs Batch)
+    // 2. SMART DOWNLOAD LINKS SCRAPING 🧠
     const downloadSections = [];
+
+    // Hum Page ke saare 'Center' tags ya 'h3/h4/p' tags ko scan karenge
+    // Kyunki link se pehle Quality likhi hoti hai
+    // Example Structure: <h3>Download 720p [1GB]</h3> <p><a href="...">Link</a></p>
 
     $('a').each((i, el) => {
         const href = $(el).attr('href');
-        const text = $(el).text().trim();
-        const parentText = $(el).parent().text().trim(); 
-
-        // Valid Link Check
+        
+        // Sirf kaam ke links
         if (href && (href.includes('m4ulinks.com') || href.includes('gdtot') || href.includes('drive'))) {
             
-            // Quality Detection
-            let quality = "HD";
-            if (text.includes('480p') || parentText.includes('480p')) quality = "480p";
-            else if (text.includes('720p') || parentText.includes('720p')) quality = "720p";
-            else if (text.includes('1080p') || parentText.includes('1080p')) quality = "1080p";
-            else if (text.includes('2160p') || parentText.includes('4k')) quality = "4K";
+            let qualityLabel = "Download Link";
+            let qualityTag = "HD";
+            let size = "";
 
-            // Type Detection (Series Logic) 🧠
-            let type = "episode"; // Default
-            const lowerText = (text + parentText).toLowerCase();
+            // --- CONTEXT FINDER LOGIC ---
             
-            if (lowerText.includes('pack') || lowerText.includes('zip') || lowerText.includes('batch') || lowerText.includes('complete') || lowerText.includes('season')) {
+            // 1. Check Link Text directly (e.g. "Download 720p")
+            const ownText = $(el).text().trim();
+            
+            // 2. Check Previous Heading/Element (Just above the link)
+            // Ye loop piche jayega jab tak koi heading na mile jisme "p" (480p) likha ho
+            let prevNode = $(el).parent().prev(); 
+            let foundHeader = "";
+            
+            for(let k=0; k<3; k++) { // Max 3 steps piche check karo
+                const txt = prevNode.text().trim();
+                if(txt && (txt.includes('480p') || txt.includes('720p') || txt.includes('1080p') || txt.includes('Zip'))) {
+                    foundHeader = txt;
+                    break;
+                }
+                prevNode = prevNode.prev();
+            }
+
+            // Combine Texts to analyze
+            const fullContext = (ownText + " " + foundHeader).toLowerCase();
+
+            // Quality Assign Karna
+            if (fullContext.includes('480p')) qualityTag = "480p";
+            else if (fullContext.includes('720p') && fullContext.includes('hevc')) qualityTag = "720p HEVC";
+            else if (fullContext.includes('720p')) qualityTag = "720p";
+            else if (fullContext.includes('1080p') && fullContext.includes('hevc')) qualityTag = "1080p HEVC";
+            else if (fullContext.includes('1080p')) qualityTag = "1080p";
+            else if (fullContext.includes('2160p') || fullContext.includes('4k')) qualityTag = "4K";
+
+            // Size Extraction (e.g. [300MB])
+            const sizeMatch = fullContext.match(/\[(\d+(\.\d+)?\s*(mb|gb))\]/i);
+            if (sizeMatch) size = sizeMatch[1].toUpperCase();
+
+            // Label Banana (Display ke liye)
+            // Agar Header mila (Jaise "Download 720p [1GB]") to wahi use karo, warna Link Text
+            qualityLabel = foundHeader && foundHeader.length < 50 ? foundHeader : ownText;
+
+            // Type Detection (Series Batch)
+            let type = "episode";
+            if (fullContext.includes('pack') || fullContext.includes('zip') || fullContext.includes('batch') || fullContext.includes('season')) {
                 type = "batch";
+                qualityTag = "Zip Pack";
             }
 
             downloadSections.push({
-                label: text || "Download Link",
+                label: size ? `${qualityTag} [${size}]` : qualityLabel, // Clean Display Name
                 link: href,
-                quality: quality,
-                type: type // 'episode' or 'batch'
+                quality: qualityTag,
+                size: size,
+                type: type
             });
         }
     });
