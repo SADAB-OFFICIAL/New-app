@@ -7,7 +7,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || 1;
     
-    // Target Website
+    // Target: Original Website
     const url = `https://movies4u.nexus/page/${page}/`;
     
     const headers = {
@@ -18,27 +18,33 @@ export async function GET(request) {
     const $ = cheerio.load(data);
     const movies = [];
 
-    // Articles loop (Movies4u specific structure)
     $('article').each((i, el) => {
-      const title = $(el).find('h2.entry-title a').text().trim();
+      const titleRaw = $(el).find('h2.entry-title a').text().trim();
       const link = $(el).find('h2.entry-title a').attr('href');
       
-      // Image scraping (Handle lazy loading if present)
-      let image = $(el).find('img').attr('src');
-      const dataSrc = $(el).find('img').attr('data-src');
-      if (dataSrc) image = dataSrc;
+      // Image Handling: Lazy load ya src check
+      let img = $(el).find('img').attr('data-src') || $(el).find('img').attr('src');
 
-      if(title && link) {
-        // Create Magic Slug (Base64)
-        // Ye slug detail page par kaam aayega
+      if(titleRaw && link) {
+        // Quality extract karna (Title se)
+        let quality = "HD";
+        if (titleRaw.includes('480p')) quality = "480p";
+        else if (titleRaw.includes('720p')) quality = "720p";
+        else if (titleRaw.includes('1080p')) quality = "1080p";
+        else if (titleRaw.includes('4K') || titleRaw.includes('2160p')) quality = "4K";
+
+        // Slug banana (Base64 Magic)
         const encodedSlug = btoa(`${link.split('/').filter(Boolean).pop()}|||https://movies4u.nexus`)
           .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
         
-        movies.push({ 
-            title, 
-            image, 
-            slug: encodedSlug,
-            quality: title.includes('480p') ? '480p' : title.includes('720p') ? '720p' : 'HD' 
+        movies.push({
+          title: titleRaw.replace(/\(20\d{2}\).*/, '').trim(), // Title clean kiya
+          originalTitle: titleRaw,
+          link: link,
+          image: img,
+          slug: encodedSlug,
+          quality: quality,
+          year: titleRaw.match(/\d{4}/)?.[0] || '2025'
         });
       }
     });
@@ -46,7 +52,6 @@ export async function GET(request) {
     return NextResponse.json({ movies });
 
   } catch (error) {
-    console.error("Home Scraping Error:", error.message);
-    return NextResponse.json({ movies: [] }); // Return empty array on error
+    return NextResponse.json({ movies: [] });
   }
 }
