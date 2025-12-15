@@ -3,23 +3,71 @@
 @tailwind utilities;
 
 :root {
+  /* HZ Flix Premium Dark Theme */
   --background: #0f1014;
+  --foreground: #ffffff;
+  --card-bg: #1c1c22;
+  --primary-red: #e50914;
 }
 
 body {
+  color: var(--foreground);
   background: var(--background);
-  color: white;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Removes blue highlight on tap in mobile */
   -webkit-tap-highlight-color: transparent;
+  
+  /* Prevent horizontal scroll on body */
+  overflow-x: hidden;
 }
 
+/* -------------------------------------------------- */
+/* Scrollbar Hiding Logic (For Movie Rows)            */
+/* -------------------------------------------------- */
+
+/* For Chrome, Safari and Opera */
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }
+
+/* For IE, Edge and Firefox */
 .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
 }
 
+/* -------------------------------------------------- */
+/* Custom Utilities                                   */
+/* -------------------------------------------------- */
+
+/* Safe area padding for iPhones (Bottom Nav ke liye) */
 .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Text Shadow for Hero Section Title */
+.text-shadow {
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.8), 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Glassmorphism Effect (Optional usage) */
+.glass {
+    background: rgba(15, 16, 20, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Custom Selection Color */
+::selection {
+    background: var(--primary-red);
+    color: white;
+}
+
+/* Smooth Image Loading Transition */
+img {
+    transition: opacity 0.3s ease-in-out;
 }
