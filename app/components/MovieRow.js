@@ -1,34 +1,44 @@
-"use client";
 import Link from 'next/link';
+import { Star } from 'lucide-react';
 
 export default function MovieRow({ title, movies }) {
-  if(!movies || movies.length === 0) return null;
-
   return (
-    <div className="py-6 px-4 md:px-8">
-      <h2 className="text-xl md:text-2xl font-semibold text-white mb-4 border-l-4 border-red-600 pl-3">
-        {title}
-      </h2>
-      <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
-        {movies.map((movie, i) => (
-          <Link key={i} href={`/v/${movie.slug}`} className="flex-shrink-0 w-36 md:w-48 group cursor-pointer relative">
-            <div className="aspect-[2/3] overflow-hidden rounded-lg border border-gray-800 relative">
+    <div className="mb-8">
+      <div className="flex justify-between items-end px-4 mb-4">
+        <h2 className="text-lg font-bold text-white">{title}</h2>
+        <span className="text-xs text-gray-500 font-medium cursor-pointer">See All</span>
+      </div>
+      
+      <div className="flex gap-4 overflow-x-auto px-4 pb-4 scrollbar-hide">
+        {movies.map((movie) => (
+          <Link 
+            key={movie.id} 
+            href={`/search?q=${encodeURIComponent(movie.title)}`} // Temporary logic to link to scraper
+            className="flex-shrink-0 w-[140px] group"
+          >
+            <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2 shadow-lg shadow-black/50">
               <img 
-                src={movie.image} 
-                alt={movie.title} 
+                src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} 
+                alt={movie.title}
+                className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
                 loading="lazy"
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 opacity-90 group-hover:opacity-100" 
               />
-              {/* Hover Play Icon */}
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="bg-red-600 rounded-full p-3 shadow-lg transform scale-0 group-hover:scale-100 transition-transform">
-                    <svg className="w-6 h-6 text-white fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                </div>
+              
+              {/* Rating Badge */}
+              <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                <span className="text-[10px] font-bold text-white">
+                  {movie.vote_average?.toFixed(1)}
+                </span>
               </div>
             </div>
-            <h3 className="text-gray-300 text-sm mt-2 font-medium truncate group-hover:text-white transition">
+            
+            <h3 className="text-white text-sm font-semibold truncate px-1">
               {movie.title}
             </h3>
+            <p className="text-gray-500 text-xs px-1">
+              {movie.release_date?.split('-')[0] || 'N/A'}
+            </p>
           </Link>
         ))}
       </div>
