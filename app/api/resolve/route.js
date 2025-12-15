@@ -5,19 +5,17 @@ import * as cheerio from 'cheerio';
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const url = searchParams.get('url');
-  const type = searchParams.get('type'); 
+  const type = searchParams.get('type');
+  const reqMode = searchParams.get('mode'); // 'batch' or 'episode' (passed from ncloud)
 
-  // Headers for scraping
   const headers = { 
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Referer': 'https://m4ulinks.com/'
   };
 
   try {
-    // ---------------------------------------------------------
-    // CASE 1: M4uLinks (Links dhundna)
-    // ---------------------------------------------------------
     if (type === 'm4u') {
+        // ... (Old M4u Logic Same as before)
         const { data } = await axios.get(url, { headers });
         const $ = cheerio.load(data);
         const links = [];
@@ -30,42 +28,40 @@ export async function GET(req) {
         });
         return NextResponse.json({ links });
     } 
-    
-    // ---------------------------------------------------------
-    // CASE 2: HubCloud / GDFlix -> Custom API Call 🚀
-    // ---------------------------------------------------------
     else if (type === 'hub') {
-        
-        // Aapki API
         const apiUrl = `https://nothing-to-see-nine.vercel.app/hubcloud?url=${encodeURIComponent(url)}&key=sadabefy`;
-        console.log("Fetching Servers:", apiUrl);
-
+        
         try {
             const apiRes = await axios.get(apiUrl);
             const data = apiRes.data;
 
-            // Agar streams mili hain
             if (data && data.streams && data.streams.length > 0) {
-                // Hum FILTER nahi karenge, saare valid links bhejenge
-                const validStreams = data.streams.filter(s => s.link && s.link.startsWith('http'));
-                
+                let validStreams = data.streams.filter(s => s.link && s.link.startsWith('http'));
+
+                // --- 🔥 MAGIC FIX FOR WRONG FILE ---
+                // Agar user ne 'batch' maanga hai, to sirf ZIP files dikhao
+                if (reqMode === 'batch') {
+                    const zipStreams = validStreams.filter(s => s.link.includes('.zip') || s.type === 'zip');
+                    if (zipStreams.length > 0) validStreams = zipStreams;
+                } 
+                // Agar 'episode' maanga hai, to ZIP hata do (taaki galti se pack na download ho)
+                else if (reqMode === 'episode') {
+                     validStreams = validStreams.filter(s => !s.link.includes('.zip'));
+                }
+
                 return NextResponse.json({ 
-                    streams: validStreams, // Pura array bhej diya
+                    streams: validStreams,
                     title: data.title
                 });
             }
-            
             return NextResponse.json({ error: 'No streams found' });
 
         } catch (apiError) {
-            console.error("API Error:", apiError.message);
-            return NextResponse.json({ error: 'Resolver API Failed' });
+            return NextResponse.json({ error: 'API Error' });
         }
     }
-
     return NextResponse.json({ error: 'Invalid Type' });
-
   } catch (e) {
-    return NextResponse.json({ error: 'Internal Server Error' });
+    return NextResponse.json({ error: 'Internal Error' });
   }
 }
